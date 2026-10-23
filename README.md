@@ -1,4 +1,4 @@
-# 📚 Custom RAG (Retrieval-Augmented Generation)
+Enterprise RAG Platform for Indian Financial Analytics
 
 <p align="center">
   <img src="frontend/public/favicon.png" width="120"/>
