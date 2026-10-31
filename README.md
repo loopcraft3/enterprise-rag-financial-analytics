@@ -1,1188 +1,154 @@
-Enterprise RAG Platform for Indian Financial Analytics
+# Indian Financial Document Analytics (RAG)
 
-<p align="center">
-  <img src="frontend/public/favicon.png" width="120"/>
-</p>
+Ask questions about financial PDFs (GST invoices, Form 16, balance sheets, annual reports) and get answers with page citations. The assistant answers only from the uploaded document and says so when it can't find something.
 
-<h3 align="center">
-Production-Ready Retrieval-Augmented Generation System using FastAPI, React, LangChain, ChromaDB, Hugging Face Embeddings, and Groq LLM.
-</h3>
+**Live demo:** <your-live-demo-link>  
+**Built by:** Shrushti
 
-<p align="center">
+> **Credit:** This project is built on top of the open-source [PixelCraftLab/custom-RAG](https://github.com/PixelCraftLab/custom-RAG) (FastAPI + React RAG pipeline with hybrid retrieval). The finance-specific features listed below are my additions.
 
-![Python](https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green?style=for-the-badge&logo=fastapi)
-![React](https://img.shields.io/badge/React-Vite-blue?style=for-the-badge&logo=react)
-![LangChain](https://img.shields.io/badge/LangChain-RAG-orange?style=for-the-badge)
-![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-purple?style=for-the-badge)
-![Groq](https://img.shields.io/badge/Groq-LLM-red?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-success?style=for-the-badge)
+## What I added to the base project
 
-</p>
+| Area | Change |
+|---|---|
+| Document understanding | Detects the document type (GST invoice, Form 16, financial statement, or general) and extracts GSTIN, TAN and assessment/financial year into chunk metadata |
+| Chunking | Invoices and Form 16 use larger fixed chunks so tables stay together; statements and reports keep semantic chunking with size caps and merging of tiny chunks |
+| Prompting | Rewrote the system prompt for financial analysis: exact figures and units, calculations shown and labelled, no invented period labels (Q1/Q3), no guessed currency, no tax or investment advice |
+| Citations | Every chunk is tagged with file and page; answers end with `(file, page N)` and the API returns de-duplicated sources with 1-based page numbers |
+| Answer caching | In-memory LRU cache with a 24-hour TTL for repeated standalone questions. The cache key includes the question, a fingerprint of the stored chunks and a hash of the prompt, so re-uploading a document or editing the prompt never serves stale answers |
+| Frontend | Markdown rendering for answers (bold, lists, tables) and a fix for text-to-speech reading the formatting symbols aloud |
+| Fixes | Diagnosed and fixed storage upload and database setup issues; replaced the "built by" fallback line |
 
----
-
-# 🌟 Overview
-
-Custom RAG is a full-stack Retrieval-Augmented Generation (RAG) application that enables users to upload PDF documents and interact with them using natural language.
-
-Unlike traditional chatbots that rely solely on the Large Language Model's internal knowledge, this application grounds every response in the uploaded documents. Relevant document chunks are retrieved from a vector database and supplied as context to the LLM before generating an answer.
-
-This significantly reduces hallucinations and ensures that responses remain faithful to the source material.
-
-The project follows a clean, modular architecture inspired by production-grade software engineering principles, where every module has a single responsibility and can evolve independently.
-
----
-
-# 🎯 Why This Project?
-
-Large Language Models are powerful but have two major limitations:
-
-- They hallucinate.
-- They do not know your private documents.
-
-Retrieval-Augmented Generation solves both problems by introducing a retrieval layer between the user query and the LLM.
-
-Instead of asking the model to "remember everything," the application:
-
-1. Retrieves the most relevant information.
-2. Injects it into the prompt.
-3. Generates a grounded answer.
-
-This project demonstrates how modern AI applications are built in production environments.
-
----
-
-# ✨ Features
-
-## 📄 PDF Upload
-
-- Upload custom PDF documents
-- Supports multiple PDFs
-- Automatic document processing
-- Stores uploaded documents locally
-
----
-
----
-
-## ✂️ Semantic Chunking
-
-Uses LangChain's **SemanticChunker** with Hugging Face embeddings to split documents based on **semantic meaning** instead of fixed-size chunks.
-
-**Configuration:**
-
-- Chunking Strategy: **Semantic Chunking**
-- Embedding Model: **Hugging Face Embeddings**
-- Breakpoint Threshold Type: **Percentile**
-- Breakpoint Threshold Value: **80th Percentile**
-
-This creates context-aware chunks by identifying natural topic boundaries, preserving complete ideas and improving retrieval accuracy for downstream RAG tasks.
-
----
-
-## 🧠 Semantic Embeddings
-
-Uses
-
-> **BAAI/bge-small-en-v1.5**
-
-Advantages
-
-- Lightweight
-- CPU Friendly
-- Excellent semantic similarity
-- Production-ready
-- Fast inference
-
-Embeddings are normalized before storage for improved cosine similarity performance.
-
----
-
-## 🗄 Persistent Vector Database
-
-Uses
-
-**ChromaDB**
-
-The database stores
-
-- Vector embeddings
-- Metadata
-- Original source filename
-- Page number
-
-The database persists on disk, eliminating the need to regenerate embeddings every time the application restarts.
-
----
-
-## 🔍 Hybrid Retrieval
-
-The application combines **semantic vector search** with **BM25 keyword search** to improve retrieval quality.
-
-**Retrieval Pipeline:**
-
-- Semantic Search (ChromaDB + Hugging Face Embeddings)
-- BM25 Keyword Search
-- Reciprocal Rank Fusion (RRF)
-- Top K Retrieval = **4**
-
-This hybrid approach combines semantic understanding with exact keyword matching, improving recall and retrieval accuracy across a wide range of queries.
-
----
-
-## 🤖 Grounded LLM Responses
-
-LLM Provider
-
-**Groq**
-
-Model
-
-**Llama 3.3 70B Versatile**
-
-Temperature
+## How it works
 
 ```
-0
+React + Vite UI
+      │  REST
+      ▼
+FastAPI backend
+  ├─ Upload:  PDF → Supabase Storage bucket "documents"
+  │           → page loader → document-type detection
+  │           → finance-aware chunking → bge-small embeddings (384-d)
+  │           → Postgres + pgvector (documents, chunks tables)
+  └─ Chat:    question → cache lookup
+              → hybrid retrieval (pgvector cosine + BM25, merged with
+                Reciprocal Rank Fusion) → top chunks tagged with file/page
+              → prompt (history + context + doc-type guide)
+              → Groq llama-3.3-70b-versatile (temperature 0)
+              → answer + sources
 ```
 
-The model never answers from its own knowledge.
+**Tech stack:** Python, FastAPI, LangChain, PostgreSQL + pgvector (Supabase), Supabase Storage, BAAI/bge-small-en-v1.5 embeddings, BM25, Groq API, React, Vite, Tailwind CSS.
 
-Instead, it only receives the retrieved document chunks as context.
+## Evaluation
 
----
+I wrote a test set of questions with known answers from a public filing (Apple's condensed quarterly statements): direct lookups, calculations (growth, margin, tax rate, current ratio, free cash flow), a reconciliation question, and out-of-document questions that must be refused.
 
-## 🚫 Hallucination Prevention
+| Check | Result |
+|---|---|
+| Answerable questions answered correctly (figure, period, page) | <x / y> |
+| Out-of-document questions correctly refused | <x / y> |
+| Median response time, uncached | <x> s |
+| Median response time, cached | <x> s |
 
-A custom system prompt ensures strict grounding.
+**Failure found during testing:** the model invented a fiscal-quarter label ("Q3") that the document did not contain, and guessed a currency symbol when the PDF text had a garbled one. I fixed both with explicit prompt constraints and re-tested.
 
-If the answer cannot be found inside the uploaded documents, the assistant replies:
+## Run it locally
 
-> Sorry, I couldn't find the answer in the uploaded document.
-> Vishal who built me has strictly grounded me.
+**Prerequisites:** Python 3.12+, Node 20+, a free [Groq API key](https://console.groq.com/keys), and a free [Supabase](https://supabase.com) project.
 
-This prevents fabricated information.
+### 1. Database (Supabase SQL Editor)
 
----
+```sql
+create extension if not exists vector;
 
-## ⚡ Fast Backend
+create table if not exists public.documents (
+  id         bigint generated always as identity primary key,
+  filename   text not null unique,
+  source     text,
+  created_at timestamptz not null default now()
+);
 
-Built using
+create table if not exists public.chunks (
+  id          bigint generated always as identity primary key,
+  document_id bigint not null references public.documents(id) on delete cascade,
+  chunk_index integer not null,
+  content     text not null,
+  page        integer,
+  metadata    jsonb not null default '{}'::jsonb,
+  embedding   vector(384) not null,
+  unique (document_id, chunk_index)
+);
 
-- FastAPI
-- REST APIs
-- Modular routing
-- Typed request validation
-- Pydantic models
+create index if not exists chunks_embedding_idx
+  on public.chunks using hnsw (embedding vector_cosine_ops);
 
----
-
-## 🎨 Interactive Frontend
-
-Built using
-
-- React
-- Vite
-- Component-based architecture
-
-Features include
-
-- Upload PDFs
-- Chat Interface
-- Message History
-- Source Attribution
-- Responsive Layout
-
-## 🔍 Hybrid Retrieval
-
-- Semantic Vector Search
-- BM25 Keyword Search
-- Reciprocal Rank Fusion (RRF)
-- Top-K Context Retrieval
-
----
-
-# 🚀 Tech Stack
-
-## Backend
-
-- Python
-- FastAPI
-- LangChain
-- ChromaDB
-- Hugging Face
-- Groq
-- Pydantic
-- Uvicorn
-
----
-
-## Frontend
-
-- React
-- Vite
-- JavaScript
-- CSS
-
----
-
-## AI Stack
-
-### Embedding Model
-
-BAAI/bge-small-en-v1.5
-
-Configuration
-
-```python
-embedding_model = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-small-en-v1.5",
-    model_kwargs={
-        "device": "cpu"
-    },
-    encode_kwargs={
-        "normalize_embeddings": True
-    }
-)
+alter table public.documents enable row level security;
+alter table public.chunks enable row level security;
 ```
 
----
+The app also stores conversation history; create the conversation tables used by `backend/app/memory.py` if your database does not have them yet.
 
-### LLM
+Then create a **private Storage bucket named `documents`**.
 
-Groq
-
-Model
-
-```
-llama-3.3-70b-versatile
-```
-
-Temperature
-
-```
-0
-```
-
----
-
-### Vector Database
-
-ChromaDB
-
-Persistent Storage
-
-Similarity Search
-
-Metadata Filtering
-
----
-
-### Retrieval
-
-**Hybrid Retrieval**
-
-Configuration
-
-- Semantic Vector Search (ChromaDB)
-- BM25 Keyword Search
-- Reciprocal Rank Fusion (RRF)
-- Top K = **4**
-
----
-
-### Chunking Strategy
-
-Semantic Chunking
-
-Configuration
-
-- Chunking Strategy: **Semantic Chunking**
-- Breakpoint Threshold Type: **Percentile**
-- Breakpoint Threshold Value: **80th Percentile**
-
----
-
-# Application Preview
-
-<p align="center">
-  <img src="frontend/public/landingimg.png"/>
-</p>
-
-```
-Home Page
-
-Upload PDF
-
-Chat Interface
-
-Retrieved Sources
-
-Responsive Mobile View
-```
-
----
-
-# ⭐ Highlights
-
-✔ Production-Ready Architecture
-
-✔ Retrieval-Augmented Generation (RAG)
-
-✔ Semantic Search
-
-✔ Persistent Vector Database
-
-✔ Grounded LLM Responses
-
-✔ Modular Backend
-
-✔ Clean React Frontend
-
-✔ Scalable Folder Structure
-
-✔ RESTful APIs
-
-✔ CPU Optimized Embeddings
-
-✔ Single Responsibility Principle
-
-✔ Separation of Concerns
-
-✔ Semantic Chunking
-
-✔ Hybrid Retrieval (Semantic Search + BM25)
-
-✔ Reciprocal Rank Fusion (RRF)
-
----
-
-# 🚀 Getting Started
-
-Follow these steps to run the project locally.
-
----
-
-# Prerequisites
-
-Make sure you have the following installed:
-
-- Python 3.12+
-- Node.js 20+
-- Git
-- pip
-- npm
-
----
-
-# 1. Clone the Repository
-
-```bash
-git clone https://github.com/PixelCraftLab/custom-RAG.git
-```
-
-Move into the project directory.
-
-```bash
-cd custom-RAG
-```
-
----
-
-# 2. Backend Setup
-
-Move to the backend folder.
+### 2. Backend
 
 ```bash
 cd backend
-```
-
-Create a virtual environment.
-
-### Windows
-
-```bash
 python -m venv venv
-```
-
-Activate it.
-
-```bash
-venv\Scripts\activate
-```
-
-### macOS / Linux
-
-```bash
-python3 -m venv venv
-```
-
-Activate it.
-
-```bash
-source venv/bin/activate
-```
-
-Install the required dependencies.
-
-```bash
+venv\Scripts\activate          # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
 ```
 
----
+Create `backend/.env`:
 
-# 3. Environment Variables
-
-Create a `.env` file inside the **backend** directory.
-
-Example:
-
-```env
-GROQ_API_KEY=your_groq_api_key
+```
+GROQ_API_KEY=your_groq_key
+DATABASE_URL=your_supabase_postgres_connection_string
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-You can obtain a free API key from:
-
-https://console.groq.com/keys
-
----
-
-# 4. Start the Backend
-
-Run the FastAPI server.
+`SUPABASE_URL` must be the bare project URL, with no `/rest/v1` and no trailing slash. Never commit `.env` and never expose the service role key to the frontend.
 
 ```bash
 uvicorn main:app --reload
 ```
 
-Backend will start on
+The first start downloads the embedding model. Wait for `Application startup complete`, then open http://127.0.0.1:8000/docs.
 
-```
-http://127.0.0.1:8000
-```
-
-Swagger Documentation
-
-```
-http://127.0.0.1:8000/docs
-```
-
----
-
-# 5. Frontend Setup
-
-Open another terminal.
-
-Move to the frontend folder.
+### 3. Frontend
 
 ```bash
 cd frontend
-```
-
-Install dependencies.
-
-```bash
 npm install
-```
-
-Start the development server.
-
-```bash
 npm run dev
 ```
 
-Frontend runs at
+Open http://localhost:5173, upload a PDF, wait for the backend to finish processing, and ask questions.
 
-```
-http://localhost:5173
-```
-
----
-
-# 6. Upload a Document
-
-Open the application in your browser.
-
-Upload one or more PDF documents.
-
-The backend will:
-
-- Read the PDF
-- Split it into chunks
-- Generate embeddings
-- Store embeddings inside ChromaDB
-
----
-
-# 7. Ask Questions
-
-After ingestion completes, ask questions related to the uploaded document.
-
-Example:
-
-```
-What is Retrieval-Augmented Generation?
-
-Summarize Chapter 3.
-
-What are the key findings?
-
-List the important points.
-```
-
-The application retrieves the most relevant chunks before sending them to the LLM.
-
----
-
-# Project Structure
-
-```
-custom-RAG
-│
-├── backend
-│
-└── frontend
-```
-
-Run these simultaneously.
-
-Backend
-
-```
-uvicorn main:app --reload
-```
-
-Frontend
-
-```
-npm run dev
-```
-
----
-
-# Default URLs
-
-Frontend
-
-```
-http://localhost:5173
-```
-
-Backend
-
-```
-http://127.0.0.1:8000
-```
-
-API Documentation
-
-```
-http://127.0.0.1:8000/docs
-```
-
----
-
-# Troubleshooting
-
-### Backend doesn't start
-
-Ensure the virtual environment is activated.
+### 4. Tests
 
 ```bash
-source venv/bin/activate
+cd backend
+pip install pytest
+pytest app/test_cache.py
 ```
 
-or
+## Limitations
 
-```bash
-venv\Scripts\activate
-```
+- **Scanned PDFs and photos** have no text layer, so they return nothing. OCR is not implemented yet.
+- **Tables** are extracted as plain text, so complex multi-column layouts can lose their structure. The model is told to say so when a table looks garbled instead of guessing.
+- **Currency symbols** (including ₹) can be lost or garbled by PDF text extraction. The prompt instructs the model not to guess a currency.
+- **The cache lives in memory**, per server process, and resets on restart.
+- **Free-tier hosting:** the Supabase project pauses after a week of inactivity and the backend host may sleep when idle, so the first request after a quiet period can be slow or need a resume.
+- Not financial, tax or legal advice. Answers explain what the uploaded document says.
+- Do not upload documents containing real personal data (PAN, salary details) to a public demo.
 
----
+## Roadmap
 
-### Missing dependencies
+Streaming answers, a sources panel in the UI, OCR for scanned documents, structured field extraction for invoices with an automatic taxable-value-plus-tax check, a shared cache, and a connection pool for the database.
 
-Reinstall them.
+## Credits and license
 
-```bash
-pip install -r requirements.txt
-```
-
----
-
-### Frontend won't start
-
-Install Node packages.
-
-```bash
-npm install
-```
-
----
-
-### ChromaDB issues
-
-Delete the existing database and regenerate embeddings.
-
-```bash
-rm -rf db
-```
-
-or (Windows)
-
-```cmd
-rmdir /s db
-```
-
-Then upload the document again.
-
----
-
-# Tech Stack
-
-### Frontend
-
-- React
-- Vite
-- JavaScript
-- CSS
-
-### Backend
-
-- FastAPI
-- LangChain
-- ChromaDB
-
-### AI Stack
-
-- BAAI/bge-small-en-v1.5 (Embeddings)
-- Groq API
-- Llama 3.3 70B Versatile
-
-### Vector Database
-
-- ChromaDB
-
-### Language
-
-- Python
-
-### Package Manager
-
-- pip
-- npm
-
-# 🏗️ System Architecture
-
-```
-                           +----------------------+
-                           |      React UI        |
-                           |  (Vite Frontend)     |
-                           +----------+-----------+
-                                      |
-                                      |
-                             REST API Calls
-                                      |
-                                      ▼
-                        +---------------------------+
-                        |        FastAPI            |
-                        |     Backend Server        |
-                        +------------+--------------+
-                                     |
-             +-----------------------+------------------------+
-             |                       |                        |
-             ▼                       ▼                        ▼
-     Upload API               Chat API               Document API
-             |                       |                        |
-             ▼                       ▼                        ▼
-     PDF Processing         Semantic Retrieval        Document Management
-             |                       |
-             ▼                       ▼
-      Document Loader         Chroma Vector Store
-             |                       |
-             ▼                       ▼
-      Semantic Chunking          Hybrid Retrieval
-             |                       │
-             |                    ──────────────
-             |                   │              │
-             |                   ▼              ▼
-             |               ChromaDB         BM25 Index
-             |                   │              │
-             |                   └──────┬───────┘
-             |                          ▼
-             |                         RRF
-             |                          │
-             |                          ▼
-             +-----------+--------------+
-                         |
-                         ▼
-                Retrieved Chunks
-                         |
-                         ▼
-                 Prompt Construction
-                         |
-                         ▼
-                 Groq Llama 3.3 70B
-                         |
-                         ▼
-                  Final Response
-                         |
-                         ▼
-                    React Frontend
-```
-
----
-
-# 🧠 RAG Workflow
-
-The application follows a complete Retrieval-Augmented Generation (RAG) pipeline.
-
-Instead of directly asking the Large Language Model to answer a question, the application first retrieves relevant information from the uploaded documents and then supplies that information as context.
-
-This grounding step greatly improves factual accuracy while minimizing hallucinations.
-
----
-
-## Step 1 — Upload Document
-
-The user uploads one or more PDF documents through the React interface.
-
-```
-React
-   │
-   ▼
-FastAPI Upload Endpoint
-```
-
-The backend receives the PDF and stores it inside:
-
-```
-backend/data/uploads/
-```
-
----
-
-## Step 2 — Load Documents
-
-LangChain's PDF loader reads every page.
-
-Each page becomes a LangChain `Document` object.
-
-Example
-
-```
-Document
-│
-├── page_content
-└── metadata
-     ├── source
-     └── page
-```
-
-Metadata is preserved throughout the pipeline for source attribution.
-
----
-
-# Step 3 — Semantic Chunking
-
-Large Language Models cannot efficiently process entire PDFs.
-
-Instead of splitting documents into fixed-size chunks, the application uses **SemanticChunker** to identify natural topic boundaries using embedding similarity.
-
-Configuration
-
-```python
-SemanticChunker(
-    embeddings=embeddings,
-    breakpoint_threshold_type="percentile",
-    breakpoint_threshold_amount=80,
-)
-```
-
-The chunker:
-
-1. Splits the document into sentences.
-2. Generates embeddings for each sentence.
-3. Measures semantic similarity between consecutive sentences.
-4. Creates a new chunk when a significant topic change is detected.
-
-This produces context-aware chunks that preserve complete ideas instead of relying on arbitrary character limits.
-
-
----
-
-# Step 4 — Embedding Generation
-
-Each chunk is converted into a dense numerical vector.
-
-Embedding Model
-
-```
-BAAI/bge-small-en-v1.5
-```
-
-Configuration
-
-```python
-HuggingFaceEmbeddings(
-
-    model_name="BAAI/bge-small-en-v1.5",
-
-    model_kwargs={
-        "device":"cpu"
-    },
-
-    encode_kwargs={
-        "normalize_embeddings":True
-    }
-
-)
-```
-
-The embedding captures semantic meaning rather than simple keywords.
-
-For example
-
-```
-"Artificial Intelligence"
-
-and
-
-"Machine Learning"
-
-will have nearby vectors even though they are different words.
-
-```
-
----
-
-# Step 5 — Vector Storage
-
-Generated vectors are stored inside ChromaDB.
-
-```
-backend/db/
-```
-
-The database contains
-
-```
-Embedding
-
-↓
-
-Original Text
-
-↓
-
-Metadata
-
-↓
-
-Source Filename
-
-↓
-
-Page Number
-```
-
-Since ChromaDB is persistent, embeddings only need to be generated once.
-
----
-
-# Step 6 — User Question
-
-Example
-
-```
-What is Retrieval-Augmented Generation?
-```
-
-The question is embedded using the same embedding model.
-
-```
-Question
-
-↓
-
-Embedding Vector
-```
-
----
-
-# Step 7 — Similarity Search
-
-The question embedding is compared against every stored vector.
-
-The closest vectors are retrieved.
-
-Current configuration
-
-```python
-k = 4
-```
-
-Result
-
-```
-Question
-
-↓
-
-Vector Search
-
-↓
-
-Top 4 Chunks
-```
-
-Only these chunks continue through the pipeline.
-
----
-
-# Step 8 — Prompt Engineering
-
-The retrieved chunks are injected into the prompt.
-
-Example
-
-```
-SYSTEM
-
-You are a helpful AI assistant.
-
-Answer ONLY using the provided context.
-
------------------------
-
-Context
-
-Chunk 1
-
-Chunk 2
-
-Chunk 3
-
-Chunk 4
-
------------------------
-
-Question
-
-What is RAG?
-
------------------------ 
-
-Answer
-```
-
-The model never receives the entire PDF.
-
-Only the most relevant context.
-
----
-
-# Step 9 — LLM Generation
-
-The application uses
-
-```
-Groq
-
-↓
-
-Llama 3.3 70B Versatile
-```
-
-Configuration
-
-```python
-temperature = 0
-```
-
-This makes responses deterministic and reduces randomness.
-
----
-
-# Step 10 — Response
-
-The backend returns
-
-```json
-{
-    "answer": "...",
-    "sources": [
-        {
-            "source":"paper.pdf",
-            "page":4
-        }
-    ]
-}
-```
-
-The frontend displays
-
-```
-Answer
-
-↓
-
-Source
-
-↓
-
-Page Number
-```
-
----
-
-# End-to-End Pipeline
-
-```
-User Uploads PDF
-        │
-        ▼
-Load PDF
-        │
-        ▼
-Semantic Chunking
-        │
-        ▼
-Generate Embeddings
-        │
-        ▼
-Store in ChromaDB
-        │
-        ▼
-────────────────────────────
-        │
-User asks Question
-        │
-        ▼
-Embed Question
-        │
-        ├─────────────┐
-        ▼             ▼
-Semantic Search     BM25 Search
-        │             │
-        └──────┬──────┘
-               ▼
-             RRF
-               │
-               ▼
-Top 4 Chunks
-        │
-        ▼
-Prompt Construction
-        │
-        ▼
-Groq Llama 3.3 70B
-        │
-        ▼
-Answer
-        │
-        ▼
-React UI
-```
-
----
-
-# 📦 Data Flow
-
-```
-PDF
-
-↓
-
-Document Loader
-
-↓
-
-LangChain Document
-
-↓
-
-SemanticChunker
-
-↓
-
-Chunks
-
-↓
-
-Embedding Model
-
-↓
-
-Vectors
-
-↓
-
-ChromaDB
-        │
-        ├──────────────┐
-        │              │
-        ▼              ▼
-Semantic Search     BM25 Search
-        │              │
-        └──────┬───────┘
-               ▼
-      Reciprocal Rank Fusion
-               │
-               ▼
-
-↓
-
-Prompt
-
-↓
-
-Groq LLM
-
-↓
-
-Response
-
-↓
-
-Frontend
-```
-
----
-
-# 🎯 Why This Architecture?
-
-This architecture is designed around production software engineering principles.
-
-### Separation of Concerns
-
-Each module performs exactly one task.
-
-Examples
-
-- Loader → Reads documents
-- Splitter → Creates chunks
-- Embeddings → Generates vectors
-- Retriever → Searches vectors
-- Prompt → Builds prompts
-- LLM → Generates answers         
-- API → Handles HTTP requests
-
-This follows the **Single Responsibility Principle (SRP)**, making the codebase easier to test, maintain, and extend.
-
----
-
-# 🚀 Benefits of the Architecture
-
-- Modular and maintainable
-- Easily replaceable components (swap LLMs or vector databases)
-- Persistent storage avoids repeated embedding generation
-- Efficient semantic retrieval
-- Low hallucination through grounded prompting
-- Clean API boundaries
-- Ready for cloud deployment
-- Easy to scale into a multi-user RAG system
-- Hybrid retrieval improves recall by combining semantic similarity with keyword matching
-
----
+Based on [PixelCraftLab/custom-RAG](https://github.com/PixelCraftLab/custom-RAG), whose README states an MIT license. Finance-specific additions by Shrushti.
