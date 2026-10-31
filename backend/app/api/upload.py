@@ -106,6 +106,8 @@ def upload_pdf(
     filename = Path(file.filename).name
     storage_path = filename
 
+        
+
     # Upload PDF to Supabase Storage
     try:
         supabase.storage.from_(BUCKET_NAME).upload(
