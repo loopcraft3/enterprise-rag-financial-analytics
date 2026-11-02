@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 # from app.loader import load_documents
 # from app.splitter import split_documents
@@ -13,9 +14,13 @@ app = FastAPI(
     version="5.2.3",
 )
 
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",") if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,11 +28,16 @@ app.add_middleware(
 
 app.include_router(chat_router)
 
-@app.get("/health")
-def health():
-    return {
-        "status": "healthy"
-    }
+@app.get("/health/db")
+def health_db():
+    from app.vectorstore import get_connection
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("select count(*) from public.chunks")
+            count = cur.fetchone()[0]
+
+    return {"status": "healthy", "chunks": count}
 
 
 app.include_router(upload_router)
@@ -40,29 +50,3 @@ def home():
     }
 
 
-# @app.get("/chunks")
-# def get_chunks():
-
-#     documents = load_documents("data/default")
-
-#     chunks = split_documents(documents)  
-
-#     result = []
-
-#     for index, chunk in enumerate(chunks): 
-                          
-#         result.append(
-#             {
-#                 "chunk_number": index + 1,
-#                 "source": chunk.metadata.get("source"),
-#                 "page": chunk.metadata.get("page"),
-#                 "characters": len(chunk.page_content),
-#                 "preview": chunk.page_content[:200]
-#             }   
-#         )
-
-#     return {                                
-#         "total_documents": len(documents),
-#         "total_chunks": len(chunks),
-#         "chunks": result
-#     }

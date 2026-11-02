@@ -1,79 +1,51 @@
-# from sentence_transformers import CrossEncoder
-# from app.config import RERANK_TOP_K
-
-# reranker = CrossEncoder(
-#     "BAAI/bge-reranker-base"
-# )
-
-
-# def rerank(question, retrieved_results):
-#     """
-#     retrieved_results:
-#         List[(Document, score)]
-
-#     Returns:
-#         Reranked List[(Document, rerank_score)]
-#     """
-
-#     if not retrieved_results:
-#         return []
-
-#     pairs = [
-#         (question, doc.page_content)
-#         for doc, _ in retrieved_results
-#     ]
-
-#     scores = reranker.predict(pairs)
-
-#     reranked = []
-
-#     for (doc, _), score in zip(retrieved_results, scores):
-#         reranked.append((doc, float(score)))
-
-#     reranked.sort(
-#         key=lambda x: x[1],
-#         reverse=True
-#     )
-
-#     return reranked[:RERANK_TOP_K]
-
-
-from sentence_transformers import CrossEncoder
+import os
 
 from app.config import RERANK_TOP_K
 
-reranker = CrossEncoder(
-    "BAAI/bge-reranker-base"
-)
+# "cross_encoder" (default, local) or "off" (free-tier deployment)
+RERANK_MODE = os.getenv("RERANK_MODE", "cross_encoder")
+
+_reranker = None
+
+
+def _get_reranker():
+    global _reranker
+
+    if _reranker is None:
+        from sentence_transformers import CrossEncoder  # imported only when needed
+
+        _reranker = CrossEncoder("BAAI/bge-reranker-base")
+
+    return _reranker
 
 
 def rerank(question, documents):
     """
-    documents:
-        List[Document]
-
-    Returns:
-        List[(Document, rerank_score)]
+    documents: List[Document]
+    Returns: List[(Document, rerank_score)]
     """
 
     if not documents:
         return []
 
-    pairs = [
-        (question, doc.page_content)
-        for doc in documents
-    ]
+    if RERANK_MODE == "off":
+        # Keep the hybrid-retrieval (RRF) order; scores only reflect rank.
+        return [
+            (doc, 1.0 / (rank + 1))
+            for rank, doc in enumerate(documents[:RERANK_TOP_K])
+        ]
 
-    scores = reranker.predict(pairs)
+    pairs = [(question, doc.page_content) for doc in documents]
 
-    reranked = [
-        (doc, float(score))
-        for doc, score in zip(documents, scores)
-    ]
+    scores = _get_reranker().predict(pairs)
 
-    reranked.sort(
-        key=lambda x: x[1],
-        reverse=True,
-    )
+    reranked = [(doc, float(score)) for doc, score in zip(documents, scores)]
+
+    reranked.sort(key=lambda x: x[1], reverse=True)
 
     return reranked[:RERANK_TOP_K]
+
+
+# Load the model at startup (as before) unless reranking is turned off.
+if RERANK_MODE != "off":
+    _get_reranker()

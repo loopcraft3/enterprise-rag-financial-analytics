@@ -1,44 +1,29 @@
-# from dotenv import load_dotenv
-# from langchain_openai import OpenAIEmbeddings
+from fastembed import TextEmbedding
+from langchain_core.embeddings import Embeddings
 
-# load_dotenv()
-
-
-# def get_embedding_model():
-#     """
-#     Returns the OpenAI embedding model.
-#     """
-
-#     embedding_model = OpenAIEmbeddings(
-#         model="text-embedding-3-small"
-#     )
-
-#     return embedding_model 
-
-
-
-from langchain_huggingface import HuggingFaceEmbeddings
 from app.config import EMBEDDING_MODEL
 
 _embedding_model = None
 
 
+class FastEmbedEmbeddings(Embeddings):
+    """Same BGE model as before, run with ONNX instead of PyTorch (far less RAM)."""
+
+    def __init__(self, model_name: str):
+        self._model = TextEmbedding(model_name=model_name, threads=1)
+
+    def embed_documents(self, texts):
+        return [v.tolist() for v in self._model.embed(list(texts), batch_size=32)]
+
+    def embed_query(self, text):
+        return next(iter(self._model.embed([text]))).tolist()
+
+
 def get_embedding_model():
-    """
-    Returns the Hugging Face embedding model.
-    Loads weights only once and reuses the cached instance.
-    """
+    """Loads the model once and reuses it."""
     global _embedding_model
 
     if _embedding_model is None:
-        _embedding_model = HuggingFaceEmbeddings(
-            model_name=EMBEDDING_MODEL, 
-            model_kwargs={
-                "device": "cpu"
-            },
-            encode_kwargs={
-                "normalize_embeddings": True
-            }
-        )
+        _embedding_model = FastEmbedEmbeddings(EMBEDDING_MODEL)
 
     return _embedding_model
