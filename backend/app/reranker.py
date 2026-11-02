@@ -1,9 +1,17 @@
 import os
+import importlib.util
 
 from app.config import RERANK_TOP_K
 
-# "cross_encoder" (default, local) or "off" (free-tier deployment)
-RERANK_MODE = os.getenv("RERANK_MODE", "cross_encoder")
+_HAS_SENTENCE_TRANSFORMERS = importlib.util.find_spec("sentence_transformers") is not None
+
+RERANK_MODE = os.getenv(
+    "RERANK_MODE", "cross_encoder" if _HAS_SENTENCE_TRANSFORMERS else "off"
+).strip().lower()
+
+if RERANK_MODE != "off" and not _HAS_SENTENCE_TRANSFORMERS:
+    print("sentence_transformers not installed: reranking disabled")
+    RERANK_MODE = "off"
 
 _reranker = None
 
