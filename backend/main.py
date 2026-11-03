@@ -8,6 +8,15 @@ if os.getenv("DB_HOST"):
         f"postgresql://{quote(os.getenv('DB_USER', ''), safe='')}:{quote(os.getenv('DB_PASSWORD', ''), safe='')}"
         f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'postgres')}?sslmode=require"
     )
+
+from urllib.parse import urlparse
+
+print(
+    "DB_HOST set:", bool(os.getenv("DB_HOST")),
+    "| DB_USER set:", bool(os.getenv("DB_USER")),
+    "| DB_PASSWORD set:", bool(os.getenv("DB_PASSWORD")),
+    "| URL host:", urlparse(os.environ.get("DATABASE_URL", "")).hostname,
+)
 # from app.loader import load_documents
 # from app.splitter import split_documents
 from fastapi import FastAPI
