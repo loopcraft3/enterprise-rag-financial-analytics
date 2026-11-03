@@ -1,5 +1,13 @@
 import os
 from fastapi import FastAPI
+from urllib.parse import quote
+
+# On Render, build DATABASE_URL from the separate DB_* variables so every module sees a valid URL.
+if os.getenv("DB_HOST"):
+    os.environ["DATABASE_URL"] = (
+        f"postgresql://{quote(os.getenv('DB_USER', ''), safe='')}:{quote(os.getenv('DB_PASSWORD', ''), safe='')}"
+        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'postgres')}?sslmode=require"
+    )
 # from app.loader import load_documents
 # from app.splitter import split_documents
 
