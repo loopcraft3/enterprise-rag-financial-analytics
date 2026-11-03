@@ -34,43 +34,20 @@ def health():
         "status": "healthy"
     }
 
-# @app.get("/health/db")
-# def health_db():
-#     from app.vectorstore import get_connection
-
-#     with get_connection() as conn:
-#         with conn.cursor() as cur:
-#             cur.execute("select count(*) from public.chunks")
-#             count = cur.fetchone()[0]
-
-#     return {"status": "healthy", "chunks": count}
-
 @app.get("/health/db")
 def health_db():
-    import os
-    from urllib.parse import urlparse
+    from fastapi import HTTPException
     from app.vectorstore import get_connection
-
-    url = os.getenv("DATABASE_URL") or ""
-    try:
-        p = urlparse(url)
-        info = {
-            "has_url": bool(url),
-            "host": p.hostname,
-            "port": p.port,
-            "user_prefix": (p.username or "")[:9],
-        }
-    except Exception as e:
-        info = {"has_url": bool(url), "url_parse_error": type(e).__name__}
 
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("select count(*) from public.chunks")
                 count = cur.fetchone()[0]
-        return {"status": "healthy", "chunks": count}
-    except Exception as e:
-        return {"status": "error", "error": str(e)[:300], "connection": info}
+    except Exception:
+        raise HTTPException(status_code=503, detail="database unavailable")
+
+    return {"status": "healthy", "chunks": count}
 
 app.include_router(upload_router)
 app.include_router(documents_router)
