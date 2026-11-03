@@ -42,8 +42,25 @@ def health():
         "status": "healthy"
     }
 
+# @app.get("/health/db")
+# def health_db():
+#     from fastapi import HTTPException
+#     from app.vectorstore import get_connection
+
+#     try:
+#         with get_connection() as conn:
+#             with conn.cursor() as cur:
+#                 cur.execute("select count(*) from public.chunks")
+#                 count = cur.fetchone()[0]
+#     except Exception:
+#         raise HTTPException(status_code=503, detail="database unavailable")
+
+#     return {"status": "healthy", "chunks": count}
+
 @app.get("/health/db")
 def health_db():
+    import traceback
+
     from fastapi import HTTPException
     from app.vectorstore import get_connection
 
@@ -53,6 +70,7 @@ def health_db():
                 cur.execute("select count(*) from public.chunks")
                 count = cur.fetchone()[0]
     except Exception:
+        print("HEALTH/DB FAILED:\n", traceback.format_exc())
         raise HTTPException(status_code=503, detail="database unavailable")
 
     return {"status": "healthy", "chunks": count}
