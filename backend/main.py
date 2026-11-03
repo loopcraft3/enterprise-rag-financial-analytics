@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+
 from urllib.parse import quote
 
 # On Render, build DATABASE_URL from the separate DB_* variables so every module sees a valid URL.
@@ -10,7 +10,7 @@ if os.getenv("DB_HOST"):
     )
 # from app.loader import load_documents
 # from app.splitter import split_documents
-
+from fastapi import FastAPI
 from app.api.chat import router as chat_router
 from app.api.upload import router as upload_router
 from app.api.documents import router as documents_router
