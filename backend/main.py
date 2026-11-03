@@ -1,35 +1,29 @@
 import os
-
 from urllib.parse import quote
 
 # On Render, build DATABASE_URL from the separate DB_* variables so every module sees a valid URL.
+# This must run before the app imports below, because they read DATABASE_URL when they load.
 if os.getenv("DB_HOST"):
     os.environ["DATABASE_URL"] = (
         f"postgresql://{quote(os.getenv('DB_USER', ''), safe='')}:{quote(os.getenv('DB_PASSWORD', ''), safe='')}"
         f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'postgres')}?sslmode=require"
     )
 
-from urllib.parse import urlparse
+import traceback
 
-print("ENV CHECK:", {k: bool(os.getenv(k)) for k in [
-    "DB_HOST", "DB_USER", "DB_PASSWORD", "DB_PORT", "DB_NAME",
-    "DATABASE_URL", "GROQ_API_KEY", "SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY", "ALLOWED_ORIGINS", "RERANK_MODE",
-]})
-# from app.loader import load_documents
-# from app.splitter import split_documents
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.chat import router as chat_router
 from app.api.upload import router as upload_router
 from app.api.documents import router as documents_router
-
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Custom RAG API",
     version="5.2.3",
 )
 
+# Comma-separated list in the ALLOWED_ORIGINS variable; "*" (allow all) when it is not set.
 ALLOWED_ORIGINS = [
     o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",") if o.strip()
 ]
@@ -43,48 +37,9 @@ app.add_middleware(
 )
 
 app.include_router(chat_router)
-
-@app.get("/health")
-def health():
-    return {
-        "status": "healthy"
-    }
-
-# @app.get("/health/db")
-# def health_db():
-#     from fastapi import HTTPException
-#     from app.vectorstore import get_connection
-
-#     try:
-#         with get_connection() as conn:
-#             with conn.cursor() as cur:
-#                 cur.execute("select count(*) from public.chunks")
-#                 count = cur.fetchone()[0]
-#     except Exception:
-#         raise HTTPException(status_code=503, detail="database unavailable")
-
-#     return {"status": "healthy", "chunks": count}
-
-@app.get("/health/db")
-def health_db():
-    import traceback
-
-    from fastapi import HTTPException
-    from app.vectorstore import get_connection
-
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("select count(*) from public.chunks")
-                count = cur.fetchone()[0]
-    except Exception:
-        print("HEALTH/DB FAILED:\n", traceback.format_exc())
-        raise HTTPException(status_code=503, detail="database unavailable")
-
-    return {"status": "healthy", "chunks": count}
-
 app.include_router(upload_router)
 app.include_router(documents_router)
+
 
 @app.get("/")
 def home():
@@ -93,3 +48,26 @@ def home():
     }
 
 
+@app.get("/health")
+def health():
+    return {
+        "status": "healthy"
+    }
+
+
+@app.get("/health/db")
+def health_db():
+    """Runs a real database query. Used by the keep-alive job so Supabase stays active."""
+    from app.vectorstore import get_connection
+
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("select count(*) from public.chunks")
+                count = cur.fetchone()[0]
+    except Exception:
+        # Full error goes to the server logs only; visitors see a short message.
+        print("HEALTH/DB FAILED:\n", traceback.format_exc())
+        raise HTTPException(status_code=503, detail="database unavailable")
+
+    return {"status": "healthy", "chunks": count}
