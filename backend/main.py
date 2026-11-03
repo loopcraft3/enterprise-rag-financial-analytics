@@ -11,12 +11,11 @@ if os.getenv("DB_HOST"):
 
 from urllib.parse import urlparse
 
-print(
-    "DB_HOST set:", bool(os.getenv("DB_HOST")),
-    "| DB_USER set:", bool(os.getenv("DB_USER")),
-    "| DB_PASSWORD set:", bool(os.getenv("DB_PASSWORD")),
-    "| URL host:", urlparse(os.environ.get("DATABASE_URL", "")).hostname,
-)
+print("ENV CHECK:", {k: bool(os.getenv(k)) for k in [
+    "DB_HOST", "DB_USER", "DB_PASSWORD", "DB_PORT", "DB_NAME",
+    "DATABASE_URL", "GROQ_API_KEY", "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY", "ALLOWED_ORIGINS", "RERANK_MODE",
+]})
 # from app.loader import load_documents
 # from app.splitter import split_documents
 from fastapi import FastAPI
