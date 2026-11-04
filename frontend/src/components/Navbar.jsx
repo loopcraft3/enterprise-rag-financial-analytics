@@ -1,27 +1,47 @@
-import { Menu } from "lucide-react";
+import { Menu, Plus, Mic } from "lucide-react";
 
-function Navbar({ onMenuClick }) {
+function Navbar({ onMenuClick, onNewChat, conversationMode, onToggleConversation }) {
     return (
-        <header className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-6 shadow-sm">
+        <header className="shrink-0 h-16 px-4 md:px-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <button
                     onClick={onMenuClick}
-                    className="md:hidden p-2 rounded-lg hover:bg-gray-100"
+                    aria-label="Open documents"
+                    className="md:hidden h-10 w-10 grid place-items-center rounded-full glass cursor-pointer"
                 >
-                    <Menu size={22} />
+                    <Menu size={19} />
                 </button>
 
-                <h1 className="text-lg md:text-2xl font-bold">
-                    Custom RAG Assistant
-                    <span className="text-sm text-neutral-500"> version=5.2.3</span>
-                </h1>
+                <div className="flex items-baseline gap-2">
+                    <span className="font-display text-[28px] leading-none tracking-tight">
+                        Hisaab
+                    </span>
+                    <span className="hidden sm:inline text-[13px] text-muted">
+                        ask your financial documents
+                    </span>
+                </div>
             </div>
 
-            <p className="hidden sm:block text-sm text-gray-500">
-                AI Powered PDF Chat
-            </p>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={onToggleConversation}
+                    className={`h-10 px-4 rounded-full text-sm font-medium flex items-center gap-2 cursor-pointer transition
+                        ${conversationMode ? "bg-ink text-white" : "glass hover:bg-white"}`}
+                >
+                    <Mic size={16} />
+                    <span className="hidden sm:inline">Voice chat</span>
+                </button>
+
+                <button
+                    onClick={onNewChat}
+                    className="h-10 px-4 rounded-full bg-ink text-white text-sm font-medium flex items-center gap-2 cursor-pointer hover:bg-black transition"
+                >
+                    <Plus size={16} />
+                    <span className="hidden sm:inline">New chat</span>
+                </button>
+            </div>
         </header>
-    ); 
+    );
 }
 
 export default Navbar;

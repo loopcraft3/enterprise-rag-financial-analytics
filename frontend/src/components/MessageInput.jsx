@@ -1,128 +1,22 @@
-// import { useState, useRef } from "react";
-// import { SendHorizontal, Mic } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ArrowUp, Mic, Paperclip, Loader2 } from "lucide-react";
 
-// function MessageInput({ onSend, loading, conversationMode }) {
-//     const [question, setQuestion] = useState("");
-//     const [listening, setListening] = useState(false);
-
-
-//     const recognitionRef = useRef(null);
-
-
-
-//     const handleSubmit = () => {
-//         const text = question.trim();
-
-//         if (!text || loading) return;
-
-//         onSend(text);
-//         setQuestion("");
-//     };
-
-//     const handleKeyDown = (e) => {
-//         if (e.key === "Enter" && !e.shiftKey) {
-//             e.preventDefault();
-//             handleSubmit();
-//         }
-//     };
-//     const startListening = () => {
-
-//         if (!recognitionRef.current) {
-
-//             if (!("webkitSpeechRecognition" in window)) {
-//                 alert("Speech Recognition is not supported.");
-//                 return;
-//             }
-
-//             recognitionRef.current = new window.webkitSpeechRecognition();
-
-//             recognitionRef.current.lang = "en-US";
-//             recognitionRef.current.continuous = false;
-//             recognitionRef.current.interimResults = false;
-
-//             recognitionRef.current.onstart = () => {
-//                 setListening(true);
-//             };
-
-//             recognitionRef.current.onresult = (event) => {
-
-//                 const transcript =
-//                     event.results[0][0].transcript;
-
-//                 setQuestion(transcript);
-
-//                 onSend(transcript, true);
-//             };
-
-//             recognitionRef.current.onend = () => {
-//                 setListening(false);
-//             };
-
-//             recognitionRef.current.onerror = () => {
-//                 setListening(false);
-//             };
-//         }
-
-//         try {
-//             recognitionRef.current.start();
-//         } catch (e) { }
-//     };
-
-//     return (
-//         <div className="border-t bg-white p-4">
-//             <div className="max-w-4xl mx-auto flex items-end gap-3">
-//                 <textarea
-//                     value={question}
-//                     onChange={(e) => setQuestion(e.target.value)}
-//                     onKeyDown={handleKeyDown}
-//                     placeholder="Upload and Ask questions about your documents only!..."
-//                     rows={1}
-//                     disabled={loading}
-//                     className="flex-1 resize-none rounded-xl border p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-//                 />
-
-//                 <button
-//                     onClick={startListening}
-//                     disabled={loading || listening}
-//                     className={`h-12 w-12 rounded-xl flex items-center justify-center text-white transition ${listening
-//                         ? "bg-red-600"
-//                         : "bg-green-600 hover:bg-green-700"
-//                         }`}
-//                 >
-//                     <Mic size={20} />
-//                 </button>
-
-//                 <button
-//                     onClick={handleSubmit}
-//                     disabled={loading || !question.trim()}
-//                     className="h-12 w-12 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-//                 >
-//                     <SendHorizontal size={20} />
-//                 </button>
-
-//             </div>
-//         </div>
-//     );
-// }
-
-// export default MessageInput;
-
-
-import { useState } from "react";
-import { SendHorizontal, Mic } from "lucide-react";
-
-function MessageInput({ onSend, loading, listening, onMicClick }) {
+function MessageInput({ onSend, loading, listening, onMicClick, onAttach, uploading }) {
     const [question, setQuestion] = useState("");
+    const textRef = useRef(null);
+    const fileRef = useRef(null);
 
-
-
-
+    // grow the box as the person types (up to ~6 lines)
+    useEffect(() => {
+        const el = textRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, 150) + "px";
+    }, [question]);
 
     const handleSubmit = () => {
         const text = question.trim();
-
         if (!text || loading) return;
-
         onSend(text);
         setQuestion("");
     };
@@ -134,47 +28,74 @@ function MessageInput({ onSend, loading, listening, onMicClick }) {
         }
     };
 
+    const canSend = question.trim() && !loading;
 
     return (
-        <div className=" bg-white p-4">
-            <div className="text-sm display flex ml-30 text-neutral-400 top-0.5">
-                Custom RAG Assistant can make mistakes. Check important info.
+        <div className="shrink-0 px-3 md:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+            <div className="max-w-3xl mx-auto">
+                <div className="glass rounded-[28px] p-2.5 transition focus-within:shadow-[0_0_0_4px_rgba(109,94,252,0.14),0_10px_40px_-12px_rgba(80,60,160,0.25)]">
+                    <textarea
+                        ref={textRef}
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Ask about your invoices, Form 16, balance sheets…"
+                        rows={1}
+                        className="w-full resize-none bg-transparent px-3 pt-2 pb-1 text-[15.5px] placeholder:text-muted/70 focus:outline-none"
+                    />
+
+                    <div className="flex items-center justify-between mt-1">
+                        <div className="flex items-center gap-1.5">
+                            <input
+                                ref={fileRef}
+                                type="file"
+                                hidden
+                                accept=".pdf"
+                                onChange={(e) => {
+                                    const f = e.target.files[0];
+                                    if (f) onAttach(f);
+                                    e.target.value = "";
+                                }}
+                            />
+                            <button
+                                onClick={() => fileRef.current.click()}
+                                disabled={uploading}
+                                className="h-9 px-3 rounded-full bg-white/70 border border-line text-[13px] flex items-center gap-1.5 cursor-pointer hover:bg-white transition disabled:opacity-60"
+                            >
+                                {uploading ? <Loader2 size={15} className="animate-spin" /> : <Paperclip size={15} />}
+                                {uploading ? "Uploading" : "Attach PDF"}
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={onMicClick}
+                                disabled={loading}
+                                aria-label="Speak your question"
+                                className={`h-9 w-9 rounded-full grid place-items-center cursor-pointer transition
+                                    ${listening ? "bg-red-500 text-white animate-pulse" : "bg-white/70 border border-line hover:bg-white"}`}
+                            >
+                                <Mic size={16} />
+                            </button>
+
+                            <button
+                                onClick={handleSubmit}
+                                disabled={!canSend}
+                                aria-label="Send"
+                                className="h-9 w-9 rounded-full grid place-items-center text-white cursor-pointer transition
+                                    bg-gradient-to-br from-accent to-accent-2 hover:scale-105 active:scale-95
+                                    disabled:from-gray-300 disabled:to-gray-300 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                            >
+                                {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowUp size={18} />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <p className="text-center text-[11.5px] text-muted mt-2">
+                    Hisaab can make mistakes. Check important figures. Not financial advice.
+                </p>
             </div>
-            <div className="max-w-4xl mx-auto flex items-end gap-3">
-                <textarea
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Upload and Ask questions about your documents only!..."
-                    rows={1}
-                    disabled={loading}
-                    className="flex-1 resize-none rounded-xl border p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-
-
-                <button
-                    onClick={onMicClick}
-                    disabled={loading}
-                    className={`h-12 w-12 rounded-xl flex items-center justify-center text-white transition ${listening
-                        ? "bg-red-600"
-                        : "bg-green-600 hover:bg-green-700"
-                        }`}
-                >
-                    <Mic size={20} />
-                </button>
-
-
-                <button
-                    onClick={handleSubmit}
-                    disabled={loading || !question.trim()}
-                    className="h-12 w-12 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-                >
-                    <SendHorizontal size={20} />
-                </button>
-
-
-            </div>
-
         </div>
     );
 }
