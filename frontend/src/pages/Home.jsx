@@ -135,59 +135,16 @@ function Home() {
 
     setLoading(true);
 
-    try {
-      const response = await sendMessage(question, conversationId);
-      setConversationId(response.conversation_id);
-      latestAnswer.current = response.answer;
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: response.answer,
-          sources: response.sources,
-        },
-      ]);
-
-      if (conversationMode) {
-
-        speechSynthesis.cancel();
-
-        const utterance = new SpeechSynthesisUtterance(response.answer);
-
-        utterance.lang = "en-US";
-        utterance.rate = 1;
-        utterance.pitch = 1;
-
-        utterance.onstart = () => {
-          console.log("Assistant speaking...");
-        };
-
-        utterance.onend = () => {
-
-          console.log("Assistant finished.");
-
-          setTimeout(() => {
-
-            if (conversationMode) {
-              startListening();
-            }
-
-          }, 300);
-
-        };
-
-        speechSynthesis.speak(utterance);
-      }
-
-    } catch (error) {
+    try {    } catch (error) {
       console.error(error);
 
+      const detail = error.response?.data?.detail;
+
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Something went wrong.",
+          content: typeof detail === "string" ? detail : "Something went wrong.",
         },
       ]);
     } finally {

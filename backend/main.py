@@ -17,11 +17,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
 from app.api.upload import router as upload_router
 from app.api.documents import router as documents_router
+from app.ratelimit import install_rate_limit  # NEW
 
 app = FastAPI(
     title="Custom RAG API",
     version="5.2.3",
 )
+
+install_rate_limit(app)  # NEW: keep this ABOVE the CORS lines below
 
 # Comma-separated list in the ALLOWED_ORIGINS variable; "*" (allow all) when it is not set.
 ALLOWED_ORIGINS = [
