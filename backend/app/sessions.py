@@ -3,6 +3,7 @@ from uuid import UUID
 
 from fastapi import Header, HTTPException
 
+from app.memory import purge_expired_messages
 from app.storage import remove_files, storage_path
 from app.vectorstore import purge_expired_documents
 
@@ -28,11 +29,18 @@ def get_session_id(x_session_id: str | None = Header(default=None)) -> str:
 
 def purge_expired_sessions() -> int:
     """
-    Delete old documents (database rows, chunks and stored PDFs).
+    Delete old documents (database rows, chunks and stored PDFs) and old chat messages.
     Never raises, so it can run in front of any request.
     """
     if DOCUMENT_TTL_HOURS <= 0:
         return 0
+
+    try:
+        removed_messages = purge_expired_messages(DOCUMENT_TTL_HOURS)
+        if removed_messages:
+            print(f"🧹 Removed {removed_messages} expired chat message(s)")
+    except Exception as e:
+        print("Purge of expired chat messages failed:", repr(e))
 
     try:
         expired = purge_expired_documents(DOCUMENT_TTL_HOURS)

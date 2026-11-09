@@ -343,3 +343,27 @@ def clear_conversation(conversation_id: UUID):
             )
 
         conn.commit()
+
+
+def purge_expired_messages(ttl_hours: float) -> int:
+    """
+    Delete saved chat messages older than ttl_hours.
+
+    The messages table holds the questions, the answers and the document passages that
+    were found for each question, so it must not outlive the uploaded PDFs themselves.
+    Returns how many rows were removed.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM public.conversation_messages
+                WHERE created_at < now() - (%s * interval '1 hour');
+                """,
+                (ttl_hours,),
+            )
+            removed = cursor.rowcount
+
+        conn.commit()
+
+    return removed

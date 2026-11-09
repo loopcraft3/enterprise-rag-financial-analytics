@@ -151,7 +151,7 @@ function Sidebar({
                                 <ShieldCheck size={16} className="shrink-0 mt-0.5" />
                                 <span>
                                     Your files are private to this chat. Answers come only from the documents listed here.
-                                    Starting a new chat clears them, and they are deleted automatically after a few hours.
+                                    Starting a new chat clears them, and old files are deleted automatically.
                                 </span>
                             </div>
                         </>
@@ -212,8 +212,8 @@ function Sidebar({
                             <div className="mt-4 flex gap-2 text-xs text-muted leading-relaxed">
                                 <ShieldCheck size={16} className="shrink-0 mt-0.5" />
                                 <span>
-                                    Saved only in this browser. Nothing is stored on our server. The PDFs are never saved, so
-                                    upload them again to ask new questions.
+                                    This list is saved only in this browser. Our server keeps your questions, answers and PDFs
+                                    only for a while and then deletes them, so upload the PDFs again to ask new questions.
                                 </span>
                             </div>
                         </>
