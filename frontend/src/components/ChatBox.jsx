@@ -11,23 +11,31 @@ const SUGGESTIONS = [
     "What is the net profit for the year?",
 ];
 
-function ChatBox({ messages, loading, onSuggest, hasDocuments, onUpload, uploading }) {
+function ChatBox({ messages, loading, onSuggest, hasDocuments, onUpload, uploading, readOnly }) {
     const lastRef = useRef(null);
     const thinkingRef = useRef(null);
     const fileRef = useRef(null);
+    const scrollRef = useRef(null);
 
     // New message (question or answer): bring ITS TOP to the top of the screen,
     // so the person starts reading the answer from its first line.
+    // A saved chat is different: show it from its first question.
     useEffect(() => {
         if (messages.length === 0) return;
+
+        if (readOnly) {
+            scrollRef.current?.scrollTo({ top: 0 });
+            return;
+        }
+
         const t = setTimeout(() => {
             lastRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 60);
         return () => clearTimeout(t);
-    }, [messages.length]);
+    }, [messages, readOnly]);
 
     return (
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto px-4 md:px-6 pt-4 min-h-full flex flex-col">
                 {messages.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center pb-10">
@@ -122,7 +130,7 @@ function ChatBox({ messages, loading, onSuggest, hasDocuments, onUpload, uploadi
                         </AnimatePresence>
 
                         {/* extra space so the newest answer can scroll up to the top of the screen */}
-                        <div className="h-[70vh] shrink-0" />
+                        <div className={`${readOnly ? "h-8" : "h-[70vh]"} shrink-0`} />
                     </>
                 )}
             </div>

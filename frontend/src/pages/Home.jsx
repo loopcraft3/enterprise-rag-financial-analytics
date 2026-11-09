@@ -9,9 +9,14 @@ import MessageInput from "../components/MessageInput";
 
 import { sendMessage, getDocuments, uploadPDF, deleteDocument, endSession } from "../api/ragApi";
 import { getSessionId, resetSessionId } from "../api/session";
+import { loadHistory, saveChat, deleteChat, clearHistory, newChatId } from "../api/history";
 
 function Home() {
   const [messages, setMessages] = useState([]);
+  // Saved chats live only in this browser. `viewing` is an old chat opened for reading.
+  const [history, setHistory] = useState(() => loadHistory());
+  const [chatId, setChatId] = useState(() => newChatId());
+  const [viewing, setViewing] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -194,7 +199,13 @@ function Home() {
     handleSendRef.current = handleSend;
   });
 
-  const newChat = () => {
+  // Save the chat in this browser after every change (questions, answers and page numbers only).
+  useEffect(() => {
+    if (viewing || messages.length === 0) return;
+    setHistory(saveChat({ id: chatId, messages, files: documents.map((d) => d.filename) }));
+  }, [messages, documents, chatId, viewing]);
+
+  const startFresh = () => {
     speechSynthesis.cancel();
 
     // Remove the old chat's documents from the server (they also expire on their own),
@@ -211,6 +222,42 @@ function Home() {
     setLoading(false);
     setUploading(false);
     setDeletingFile(null);
+    setViewing(null);
+    setChatId(newChatId());
+    setToast(null);
+  };
+
+  const newChat = () => startFresh();
+
+  // Open a saved chat to read it. The PDFs are not kept, so it is read-only.
+  const openChat = (id) => {
+    if (viewing?.id === id || (!viewing && id === chatId)) {
+      setSidebarOpen(false);
+      return;
+    }
+
+    const chat = history.find((c) => c.id === id);
+    if (!chat) return;
+
+    startFresh();
+    setViewing(chat);
+    setMessages(chat.messages);
+    setSidebarOpen(false);
+  };
+
+  const deleteHistoryChat = (id) => {
+    // Deleting the chat that is on screen also clears the screen.
+    if (viewing?.id === id || (!viewing && id === chatId)) startFresh();
+    setHistory(deleteChat(id));
+  };
+
+  const clearAllHistory = () => {
+    const ok = window.confirm(
+      "Delete all saved chats from this browser? The chat on your screen will be cleared too."
+    );
+    if (!ok) return;
+    startFresh();
+    setHistory(clearHistory());
   };
 
   return (
@@ -233,6 +280,11 @@ function Home() {
           onDelete={handleDelete}
           uploading={uploading}
           deletingFile={deletingFile}
+          history={history}
+          activeChatId={viewing ? viewing.id : chatId}
+          onOpenChat={openChat}
+          onDeleteChat={deleteHistoryChat}
+          onClearHistory={clearAllHistory}
         />
 
         <main className="flex-1 min-w-0 flex flex-col min-h-0">
@@ -243,16 +295,40 @@ function Home() {
             hasDocuments={documents.length > 0}
             onUpload={handleUpload}
             uploading={uploading}
+            readOnly={!!viewing}
           />
 
-          <MessageInput
-            onSend={handleSend}
-            loading={loading}
-            listening={listening}
-            onMicClick={startListening}
-            onAttach={handleUpload}
-            uploading={uploading}
-          />
+          {viewing ? (
+            <div className="shrink-0 px-3 md:px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+              <div className="max-w-3xl mx-auto glass rounded-[28px] px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-[13.5px] leading-relaxed min-w-0">
+                  <p className="font-medium">You are reading a saved chat.</p>
+                  <p className="text-muted">
+                    The PDFs are not kept. To ask new questions, start a new chat and upload them again
+                    {viewing.files?.length > 0 && (
+                      <span className="truncate block sm:inline"> ({viewing.files.join(", ")})</span>
+                    )}
+                    .
+                  </p>
+                </div>
+                <button
+                  onClick={newChat}
+                  className="h-10 px-5 shrink-0 rounded-full bg-ink text-white text-sm font-medium cursor-pointer hover:bg-black transition"
+                >
+                  Start new chat
+                </button>
+              </div>
+            </div>
+          ) : (
+            <MessageInput
+              onSend={handleSend}
+              loading={loading}
+              listening={listening}
+              onMicClick={startListening}
+              onAttach={handleUpload}
+              uploading={uploading}
+            />
+          )}
         </main>
       </div>
 
