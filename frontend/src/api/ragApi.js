@@ -10,7 +10,7 @@ export async function uploadPDF(file) {
 }
 
 
-export async function sendMessage(question, conversationId=null) {
+export async function sendMessage(question, conversationId = null) {
   const response = await api.post("/chat", {
     conversation_id: conversationId,
     question,
@@ -20,7 +20,6 @@ export async function sendMessage(question, conversationId=null) {
 }
 
 
-
 export async function getDocuments() {
   const response = await api.get("/documents");
 
@@ -28,7 +27,17 @@ export async function getDocuments() {
 }
 
 export async function deleteDocument(filename) {
-  const response = await api.delete(`/documents/${filename}`);
+  const response = await api.delete(`/documents/${encodeURIComponent(filename)}`);
+
+  return response.data;
+}
+
+// Remove everything the old chat uploaded. The id is passed in because
+// a new session id has usually been created by the time this request goes out.
+export async function endSession(sessionId) {
+  const response = await api.delete("/session", {
+    headers: { "X-Session-Id": sessionId },
+  });
 
   return response.data;
 }

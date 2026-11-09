@@ -5,21 +5,26 @@ from app.rrf import reciprocal_rank_fusion
 
 def hybrid_retrieve(
     question: str,
-
     k: int,
+    session_id: str,
 ):
+    """
+    Semantic (pgvector) + keyword (BM25) search over one session's documents,
+    merged with Reciprocal Rank Fusion.
+    """
+
     dense_results = vector_search(
         question=question,
-
+        session_id=session_id,
         k=k,
     )
 
-    bm25 = load_bm25()
+    bm25 = load_bm25(session_id)
 
     if bm25 is None:
         return dense_results[:k]
 
-    bm25_results = bm25.search( 
+    bm25_results = bm25.search(
         question,
         k=k,
     )
@@ -29,4 +34,4 @@ def hybrid_retrieve(
         bm25_results,
     )
 
-    return fused_results[:k] 
+    return fused_results[:k]

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Upload, Loader2 } from "lucide-react";
 import MessageList from "./MessageList";
 import Thinking from "./Thinking";
 
@@ -10,9 +11,10 @@ const SUGGESTIONS = [
     "What is the net profit for the year?",
 ];
 
-function ChatBox({ messages, loading, onSuggest }) {
+function ChatBox({ messages, loading, onSuggest, hasDocuments, onUpload, uploading }) {
     const lastRef = useRef(null);
     const thinkingRef = useRef(null);
+    const fileRef = useRef(null);
 
     // New message (question or answer): bring ITS TOP to the top of the screen,
     // so the person starts reading the answer from its first line.
@@ -57,22 +59,55 @@ function ChatBox({ messages, loading, onSuggest }) {
                             found it on.
                         </motion.p>
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.45, duration: 0.6 }}
-                            className="mt-8 flex flex-wrap justify-center gap-2 max-w-xl"
-                        >
-                            {SUGGESTIONS.map((s) => (
+                        {hasDocuments ? (
+                            <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.45, duration: 0.6 }}
+                                className="mt-8 flex flex-wrap justify-center gap-2 max-w-xl"
+                            >
+                                {SUGGESTIONS.map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => onSuggest(s)}
+                                        className="glass rounded-full px-4 py-2 text-[13.5px] cursor-pointer hover:bg-white hover:-translate-y-0.5 transition"
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.45, duration: 0.6 }}
+                                className="mt-8 flex flex-col items-center"
+                            >
+                                <input
+                                    ref={fileRef}
+                                    type="file"
+                                    hidden
+                                    accept=".pdf"
+                                    onChange={(e) => {
+                                        const f = e.target.files[0];
+                                        if (f) onUpload(f);
+                                        e.target.value = "";
+                                    }}
+                                />
                                 <button
-                                    key={s}
-                                    onClick={() => onSuggest(s)}
-                                    className="glass rounded-full px-4 py-2 text-[13.5px] cursor-pointer hover:bg-white hover:-translate-y-0.5 transition"
+                                    onClick={() => fileRef.current.click()}
+                                    disabled={uploading}
+                                    className="h-12 px-7 rounded-full bg-ink text-white text-[15px] font-medium flex items-center gap-2 cursor-pointer
+                                        hover:bg-black hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-wait"
                                 >
-                                    {s}
+                                    {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+                                    {uploading ? "Reading your PDF…" : "Upload a PDF to start"}
                                 </button>
-                            ))}
-                        </motion.div>
+                                <p className="text-xs text-muted mt-3">
+                                    PDF only · up to 5 MB · private to this chat
+                                </p>
+                            </motion.div>
+                        )}
                     </div>
                 ) : (
                     <>

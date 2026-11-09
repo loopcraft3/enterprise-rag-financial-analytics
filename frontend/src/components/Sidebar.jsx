@@ -105,8 +105,8 @@ function Sidebar({ isOpen, onClose, documents, onUpload, onDelete, uploading, de
                     <div className="mt-4 flex gap-2 text-xs text-muted leading-relaxed">
                         <ShieldCheck size={16} className="shrink-0 mt-0.5" />
                         <span>
-                            Answers come only from the documents listed here. Delete a file and wait a few seconds
-                            while it is fully removed.
+                            Your files are private to this chat. Answers come only from the documents listed here.
+                            Starting a new chat clears them, and they are deleted automatically after a few hours.
                         </span>
                     </div>
                 </div>

@@ -61,7 +61,11 @@ def health():
 @app.get("/health/db")
 def health_db():
     """Runs a real database query. Used by the keep-alive job so Supabase stays active."""
+    from app.sessions import purge_expired_sessions
     from app.vectorstore import get_connection
+
+    # The keep-alive job calls this every couple of days: also clear out old uploads.
+    purge_expired_sessions()
 
     try:
         with get_connection() as conn:

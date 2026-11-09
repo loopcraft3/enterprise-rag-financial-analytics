@@ -13,6 +13,9 @@ test_document = Document(
     },
 )
 
+# Documents belong to a session; use a throwaway one for this check
+SESSION_ID = "00000000-0000-0000-0000-000000000001"
+
 # Load embedding model
 embedding_model = get_embedding_model()
 
@@ -20,6 +23,7 @@ embedding_model = get_embedding_model()
 add_documents(
     chunks=[test_document],
     embedding_model=embedding_model,
+    session_id=SESSION_ID,
 )
 
 # Search PostgreSQL using pgvector
@@ -27,6 +31,7 @@ results = vector_search(
     question="Which country is in South Asia?",
     embedding_model=embedding_model,
     k=1,
+    session_id=SESSION_ID,
 )
 
 print("\n🔎 Search result:")

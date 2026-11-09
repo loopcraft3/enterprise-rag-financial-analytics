@@ -1,24 +1,13 @@
-# import pickle
-
-# def load_bm25():
-
-#     with open("data/bm25.pkl", "rb") as f:
-#         return pickle.load(f)
-
-
-
-
-
 from app.bm25 import BM25Retriever
 from app.vectorstore import load_all_documents
 
 
-def load_bm25():
+def load_bm25(session_id: str):
     """
-    Build the BM25 index from the current PostgreSQL documents.
+    Build the BM25 index from one session's documents in PostgreSQL.
     """
 
-    documents = load_all_documents() 
+    documents = load_all_documents(session_id)
 
     if not documents:
         return None

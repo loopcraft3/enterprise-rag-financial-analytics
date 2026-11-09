@@ -65,16 +65,39 @@ def make_key(question: str, corpus_fingerprint: str, prompt_text: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
-def corpus_fingerprint():
-    """Changes whenever chunks are added or removed (ids keep growing). None if the DB is unreachable."""
+EMPTY_CORPUS = "empty"
+
+
+def corpus_fingerprint(session_id: str):
+    """
+    A hash of everything this session has uploaded (file names and chunk text).
+
+    - Changes when a document is added or removed, so old answers are never reused.
+    - Two sessions that uploaded the same file get the same fingerprint, so the
+      second one can reuse the first one's cached answers (the answer only
+      depends on the document, not on who asked).
+    - EMPTY_CORPUS when the session has no documents; None if the database
+      could not be reached.
+    """
     try:
         from app.vectorstore import get_connection
 
         with get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("select count(*), coalesce(max(id), 0) from public.chunks")
-                count, max_id = cur.fetchone()
-        return f"{count}-{max_id}"
+                cur.execute(
+                    """
+                    select md5(string_agg(
+                        d.filename || ':' || c.chunk_index::text || ':' || c.content,
+                        E'\\n' order by d.filename, c.chunk_index
+                    ))
+                    from public.chunks c
+                    join public.documents d on d.id = c.document_id
+                    where d.session_id = %s
+                    """,
+                    (session_id,),
+                )
+                (digest,) = cur.fetchone()
+        return digest or EMPTY_CORPUS
     except Exception as e:
         print("Cache fingerprint failed, skipping cache:", repr(e))
         return None

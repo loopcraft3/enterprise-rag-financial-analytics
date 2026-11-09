@@ -7,7 +7,8 @@ import Sidebar from "../components/Sidebar";
 import ChatBox from "../components/ChatBox";
 import MessageInput from "../components/MessageInput";
 
-import { sendMessage, getDocuments, uploadPDF, deleteDocument } from "../api/ragApi";
+import { sendMessage, getDocuments, uploadPDF, deleteDocument, endSession } from "../api/ragApi";
+import { getSessionId, resetSessionId } from "../api/session";
 
 function Home() {
   const [messages, setMessages] = useState([]);
@@ -77,57 +78,79 @@ function Home() {
 
   /* ---------- documents ---------- */
 
+  // Every request belongs to the current session (one visit / one chat). If the person
+  // starts a new chat while a request is still running, its late answer is simply ignored.
+
   const loadDocuments = async () => {
+    const session = getSessionId();
+
     try {
       const response = await getDocuments();
-      setDocuments(response.documents);
+      if (session === getSessionId()) setDocuments(response.documents);
     } catch (error) {
       console.error(error);
     }
   };
 
+  // A new visit starts with no documents. This first request also wakes the free server up.
   useEffect(() => {
     loadDocuments();
   }, []);
 
   const handleUpload = async (file) => {
+    const session = getSessionId();
     setUploading(true);
+
     try {
       await uploadPDF(file);
+      if (session !== getSessionId()) return;
+
       await loadDocuments();
       showToast("ok", `${file.name} is ready. You can ask questions now.`);
     } catch (error) {
       console.error(error);
+      if (session !== getSessionId()) return;
+
       const detail = error.response?.data?.detail;
       showToast("error", typeof detail === "string" ? detail : "Upload failed. Please try again.");
     } finally {
-      setUploading(false);
+      if (session === getSessionId()) setUploading(false);
     }
   };
 
   const handleDelete = async (filename) => {
+    const session = getSessionId();
     setDeletingFile(filename);
+
     try {
       await deleteDocument(filename);
+      if (session !== getSessionId()) return;
+
       await loadDocuments();
       showToast("ok", `${filename} was removed.`);
     } catch (error) {
       console.error(error);
+      if (session !== getSessionId()) return;
+
       const detail = error.response?.data?.detail;
       showToast("error", typeof detail === "string" ? detail : "Delete failed. Please try again.");
     } finally {
-      setDeletingFile(null);
+      if (session === getSessionId()) setDeletingFile(null);
     }
   };
 
   /* ---------- chat ---------- */
 
   const handleSend = async (question) => {
+    const session = getSessionId();
+
     setMessages((prev) => [...prev, { role: "user", content: question }]);
     setLoading(true);
 
     try {
       const response = await sendMessage(question, conversationId);
+      if (session !== getSessionId()) return;
+
       setConversationId(response.conversation_id);
 
       setMessages((prev) => [
@@ -148,6 +171,8 @@ function Home() {
       }
     } catch (error) {
       console.error(error);
+      if (session !== getSessionId()) return;
+
       // Show the server's own message (for example the "too many questions" limit)
       const detail = error.response?.data?.detail;
       setMessages((prev) => [
@@ -161,7 +186,7 @@ function Home() {
         },
       ]);
     } finally {
-      setLoading(false);
+      if (session === getSessionId()) setLoading(false);
     }
   };
 
@@ -171,8 +196,21 @@ function Home() {
 
   const newChat = () => {
     speechSynthesis.cancel();
+
+    // Remove the old chat's documents from the server (they also expire on their own),
+    // then start a brand new session: no documents, no messages.
+    const oldSession = getSessionId();
+    if (documents.length > 0 || uploading) {
+      endSession(oldSession).catch(() => {});
+    }
+    resetSessionId();
+
     setMessages([]);
     setConversationId(null);
+    setDocuments([]);
+    setLoading(false);
+    setUploading(false);
+    setDeletingFile(null);
   };
 
   return (
@@ -198,7 +236,14 @@ function Home() {
         />
 
         <main className="flex-1 min-w-0 flex flex-col min-h-0">
-          <ChatBox messages={messages} loading={loading} onSuggest={handleSend} />
+          <ChatBox
+            messages={messages}
+            loading={loading}
+            onSuggest={handleSend}
+            hasDocuments={documents.length > 0}
+            onUpload={handleUpload}
+            uploading={uploading}
+          />
 
           <MessageInput
             onSend={handleSend}

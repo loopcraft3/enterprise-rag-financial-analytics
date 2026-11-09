@@ -12,9 +12,14 @@ from app.memory import (
     get_or_create_conversation,
 )
 from app.config import DEFAULT_TOP_K, FINAL_CONTEXT_K
-from app.cache import answer_cache, make_key, corpus_fingerprint, is_cacheable
+from app.cache import answer_cache, make_key, corpus_fingerprint, is_cacheable, EMPTY_CORPUS
 
 CACHE_ENABLED = os.getenv("CACHE_ENABLED", "1") == "1"
+
+NO_DOCUMENTS_MESSAGE = (
+    "There are no documents in this chat yet. "
+    "Upload a PDF first, then ask your question."
+)
 
 
 def format_context(documents):
@@ -50,6 +55,7 @@ def build_sources(documents):
 
 def generate_answer(
     question: str,
+    session_id: str,
     k: int = DEFAULT_TOP_K,
     conversation_id: UUID | None = None,
 ):
@@ -64,24 +70,36 @@ def generate_answer(
 
     conversation = get_conversation(conversation_id)
 
+    # What has this visitor uploaded? (None means the database did not answer)
+    fingerprint = corpus_fingerprint(session_id)
+
+    # Nothing uploaded yet: say so, without searching or calling the LLM.
+    if fingerprint == EMPTY_CORPUS:
+        add_assistant_message(conversation_id, NO_DOCUMENTS_MESSAGE)
+
+        return {
+            "answer": NO_DOCUMENTS_MESSAGE,
+            "sources": [],
+            "conversation_id": conversation_id,
+        }
+
     # ---- Cache lookup (standalone questions only) ----
     cache_key = None
-    if CACHE_ENABLED and is_cacheable(question, conversation):
-        fingerprint = corpus_fingerprint()
-        if fingerprint:
-            cache_key = make_key(question, fingerprint, SYSTEM_PROMPT)
-            cached = answer_cache.get(cache_key)
-            if cached:
-                print("CACHE HIT:", answer_cache.stats())
-                add_assistant_message(conversation_id, cached["answer"])
-                return {
-                    "answer": cached["answer"],
-                    "sources": cached["sources"],
-                    "conversation_id": conversation_id,
-                }
-            print("CACHE MISS:", answer_cache.stats())
+    if CACHE_ENABLED and fingerprint and is_cacheable(question, conversation):
+        cache_key = make_key(question, fingerprint, SYSTEM_PROMPT)
+        cached = answer_cache.get(cache_key)
+        if cached:
+            print("CACHE HIT:", answer_cache.stats())
+            add_assistant_message(conversation_id, cached["answer"])
+            return {
+                "answer": cached["answer"],
+                "sources": cached["sources"],
+                "conversation_id": conversation_id,
+            }
+        print("CACHE MISS:", answer_cache.stats())
 
     results = retrieve_documents(
+        session_id=session_id,
         question=question,
         k=k,
     )

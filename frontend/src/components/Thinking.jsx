@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { serverMaybeAsleep } from "../api/session";
 
 const STEPS = [
     "Searching your documents…",
@@ -14,8 +15,11 @@ function Thinking() {
 
     useEffect(() => {
         const a = setInterval(() => setStep((s) => Math.min(s + 1, STEPS.length - 1)), 2200);
-        // The free server sleeps when nobody uses it; the first question can take a minute.
-        const b = setTimeout(() => setSlow(true), 9000);
+        // The free server sleeps when nobody uses it, and then the first question can take a minute.
+        // Only say so if the server really may be asleep (not on every slow answer).
+        const b = setTimeout(() => {
+            if (serverMaybeAsleep()) setSlow(true);
+        }, 9000);
         return () => {
             clearInterval(a);
             clearTimeout(b);

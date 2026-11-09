@@ -29,4 +29,4 @@ def test_lru_eviction():
 def test_followups_not_cached():
     convo = [{"role": "user"}, {"role": "assistant"}, {"role": "user"}]
     assert not is_cacheable("what about the previous year", convo)
-    assert is_cacheable("what was the gross margin percentage this quarter", convo)
+    assert is_cacheable("what was the gross margin percentage last quarter", convo)
