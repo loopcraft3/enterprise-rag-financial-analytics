@@ -202,7 +202,7 @@ pytest app/test_cache.py
 
 ## Roadmap
 
-Streaming answers, click-through citations that open the PDF page, OCR for scanned documents, structured field extraction for invoices with an automatic taxable-value-plus-tax check, automated retrieval evaluation, Redis for the cache and rate limits, and a connection pool for the database.
+Optional login so chat history and documents follow you across devices, streaming answers, click-through citations that open the PDF page, OCR for scanned documents, structured field extraction for invoices with an automatic taxable-value-plus-tax check, automated retrieval evaluation, Redis for the cache and rate limits, and a connection pool for the database.
 
 ## Credits and license
 
