@@ -8,6 +8,7 @@ Ask questions about financial PDFs (GST invoices, Form 16, balance sheets, annua
 <img width="1917" height="825" alt="image" src="https://github.com/user-attachments/assets/79a4016e-0619-40c8-87be-a004fccfd604" />
 <img width="1915" height="820" alt="image" src="https://github.com/user-attachments/assets/249de29c-c321-4512-9ff2-36db441dd093" />
 
+
 > The backend runs on a free server that sleeps when idle. The first question after a quiet period can take up to a minute. The app only shows a "waking up" note when the server has really been idle.
 
 > **Credit:** This project is built on top of the open-source [PixelCraftLab/custom-RAG](https://github.com/PixelCraftLab/custom-RAG) (FastAPI + React RAG pipeline with hybrid retrieval). The finance-specific features listed below are my additions.
