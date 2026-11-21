@@ -1,28 +1,32 @@
+# Hisaab backend (FastAPI). Build:  docker build -t hisaab-backend .
+# Run:   docker run --env-file .env -p 8000:8000 hisaab-backend
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    HF_HOME=/home/user/.cache/huggingface
+    FASTEMBED_CACHE_PATH=/opt/models \
+    PORT=8000
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Hugging Face runs the container as UID 1000
-RUN useradd -m -u 1000 user
-WORKDIR /home/user/app
+WORKDIR /app
 
-COPY requirements.txt .
-# CPU-only torch first (the default Linux wheel is a multi-GB CUDA build), then everything else
-RUN pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cpu \
-    && pip install -r requirements.txt
+# Install dependencies first so Docker can reuse this layer when only the code changes.
+# requirements-deploy.txt uses fastembed (ONNX), not PyTorch, so the image stays small.
+COPY requirements-deploy.txt .
+RUN pip install -r requirements-deploy.txt
 
-USER user
+# Download the embedding model at build time, so the container starts fast.
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='BAAI/bge-small-en-v1.5')"
 
-# Download the embedding model at build time so startup is fast
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-en-v1.5')"
+# Run as a normal user, not root.
+RUN useradd -m -u 1000 appuser && chown -R appuser /app /opt/models
+USER appuser
 
-COPY --chown=user . .
+COPY --chown=appuser . .
 
-EXPOSE 7860
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+EXPOSE 8000
+# Platforms like Render set PORT; locally it defaults to 8000.
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]

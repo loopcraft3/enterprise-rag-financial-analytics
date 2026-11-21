@@ -41,7 +41,7 @@ FastAPI backend
                 Reciprocal Rank Fusion), limited to this chat's documents
               → top chunks tagged with file/page
               → prompt (history + context + doc-type guide)
-              → Groq llama-3.3-70b-versatile (temperature 0)
+              → Groq openai/gpt-oss-120b (temperature 0)
               → answer + sources
 ```
 
@@ -165,8 +165,24 @@ Open http://localhost:5173, upload a PDF, wait for the backend to finish process
 ```bash
 cd backend
 pip install pytest
-pytest app/test_cache.py
+python -m pytest tests app/test_cache.py
 ```
+
+The tests cover the cache, rank fusion, document-type detection and metadata extraction, rate limits and session-id checks. They need no database, Supabase or Groq key. GitHub Actions runs them, and builds the frontend, on every push (`.github/workflows/ci.yml`).
+
+### 5. Evaluation
+
+`eval/run_eval.py` uploads a PDF to a running backend, asks the questions in `eval/questions.json`, and prints how many answers, page citations and refusals were correct. See `eval/README.md`.
+
+### 6. Run the backend with Docker (optional)
+
+```bash
+cd backend
+docker build -t hisaab-backend .
+docker run --env-file .env -p 8000:8000 hisaab-backend
+```
+
+The image uses `requirements-deploy.txt` (fastembed, no PyTorch) and downloads the embedding model while building, so it starts quickly. Open http://127.0.0.1:8000/docs to check it.
 
 ## Optional settings (Render environment variables)
 
@@ -199,7 +215,7 @@ pytest app/test_cache.py
 
 ## Roadmap
 
-Streaming answers, click-through citations that open the PDF page, OCR for scanned documents, structured field extraction for invoices with an automatic taxable-value-plus-tax check, automated retrieval evaluation, Redis for the cache and rate limits, and a connection pool for the database.
+Optional login so chat history and documents follow you across devices, streaming answers, click-through citations that open the PDF page, OCR for scanned documents, structured field extraction for invoices with an automatic taxable-value-plus-tax check, automated retrieval evaluation, Redis for the cache and rate limits, and a connection pool for the database.
 
 ## Credits and license
 

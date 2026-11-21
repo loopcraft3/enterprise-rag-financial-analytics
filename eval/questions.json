@@ -1,0 +1,17 @@
+[
+  {
+    "TODO": "Replace this whole file with your own questions (see eval/README.md).",
+    "id": 1,
+    "question": "Example: What was total net sales for the quarter?",
+    "expect": ["the exact figure from your PDF, for example 94,930"],
+    "file": "your_file.pdf",
+    "page": 1,
+    "answerable": true
+  },
+  {
+    "TODO": "Example of a question the PDF cannot answer.",
+    "id": 2,
+    "question": "Example: What is the CEO's home address?",
+    "answerable": false
+  }
+]
