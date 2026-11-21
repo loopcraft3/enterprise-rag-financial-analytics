@@ -1,17 +1,23 @@
 [
-  {
-    "TODO": "Replace this whole file with your own questions (see eval/README.md).",
-    "id": 1,
-    "question": "Example: What was total net sales for the quarter?",
-    "expect": ["the exact figure from your PDF, for example 94,930"],
-    "file": "your_file.pdf",
-    "page": 1,
-    "answerable": true
-  },
-  {
-    "TODO": "Example of a question the PDF cannot answer.",
-    "id": 2,
-    "question": "Example: What is the CEO's home address?",
-    "answerable": false
-  }
+  {"id": 1,  "question": "What was the cash at the beginning of the year (year ended June 30, 1997)?", "expect": ["4,330,000"], "file": "sample.pdf", "page": 2, "answerable": true},
+  {"id": 2,  "question": "What were the total receipts in the statement of cash activity?", "expect": ["16,900,500"], "file": "sample.pdf", "page": 2, "answerable": true},
+  {"id": 3,  "question": "How much was paid for claims in the statement of cash activity?", "expect": ["8,370,700"], "file": "sample.pdf", "page": 2, "answerable": true},
+  {"id": 4,  "question": "What was the total change in cash for the year?", "expect": ["35,000"], "file": "sample.pdf", "page": 2, "answerable": true},
+  {"id": 5,  "question": "What was the cash at the end of the year?", "expect": ["4,295,000"], "file": "sample.pdf", "page": 2, "answerable": true},
+  {"id": 6,  "question": "What were the total assets on June 30, 1997?", "expect": ["27,275,300"], "file": "sample.pdf", "page": 3, "answerable": true},
+  {"id": 7,  "question": "What were the investments on the balance sheet in 1996?", "expect": ["17,102,200"], "file": "sample.pdf", "page": 3, "answerable": true},
+  {"id": 8,  "question": "What were the total liabilities in 1997?", "expect": ["24,664,500"], "file": "sample.pdf", "page": 3, "answerable": true},
+  {"id": 9,  "question": "What were the retained earnings on the balance sheet for 1997?", "expect": ["2,610,800"], "file": "sample.pdf", "page": 3, "answerable": true},
+  {"id": 10, "question": "What was the total net income for 1997?", "expect": ["710,500"], "file": "sample.pdf", "page": 4, "answerable": true},
+  {"id": 11, "question": "What were the total revenues in 1996?", "expect": ["16,342,900"], "file": "sample.pdf", "page": 4, "answerable": true},
+  {"id": 12, "question": "What were the workers' compensation contributions in 1997?", "expect": ["10,030,000"], "file": "sample.pdf", "page": 4, "answerable": true},
+  {"id": 13, "question": "What was the net income of the liability program in 1997?", "expect": ["77,600"], "file": "sample.pdf", "page": 4, "answerable": true},
+  {"id": 14, "question": "What were the total expenses in 1997?", "expect": ["16,150,000"], "file": "sample.pdf", "page": 4, "answerable": true},
+  {"id": 15, "question": "By how much did total assets increase from 1996 to 1997?", "expect": ["5,593,600"], "file": "sample.pdf", "page": 3, "answerable": true},
+  {"id": 16, "question": "By how much did investments increase from 1996 to 1997?", "expect": ["5,691,100"], "file": "sample.pdf", "page": 3, "answerable": true},
+  {"id": 17, "question": "By how much did total contributions grow from 1996 to 1997?", "expect": ["521,000"], "file": "sample.pdf", "page": 4, "answerable": true},
+  {"id": 18, "question": "What was the net income for claim year 1996 in the liability program?", "expect": ["139,400"], "file": "sample.pdf", "page": 6, "answerable": true},
+  {"id": 19, "question": "What is the home address of the finance manager?", "answerable": false},
+  {"id": 20, "question": "What interest rate does the organization pay on its debt?", "answerable": false},
+  {"id": 21, "question": "What were the total revenues in 2005?", "answerable": false}
 ]

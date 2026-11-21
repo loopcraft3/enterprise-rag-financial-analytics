@@ -1,0 +1,167 @@
+[
+  {
+    "id": 1,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 4.193703889846802,
+    "answer": "The cash at the beginning of the year ended\u202fJune\u202f30\u202f1997 was **$4,330,000** (CASH, Beginning of Year)(sample.pdf, page\u202f2)."
+  },
+  {
+    "id": 2,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 3.985957622528076,
+    "answer": "The **total receipts** in the Statement of Cash Activity for the year ended\u202fJune\u202f30\u202f1997 were **$16,900,500** (sample.pdf, page\u202f2)."
+  },
+  {
+    "id": 3,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 3.7743160724639893,
+    "answer": "The cash\u2011flow statement shows that **$8,370,700** was paid for claims for the year ended\u202fJune\u202f30\u202f1997 (file name: sample.pdf, page\u202f2)."
+  },
+  {
+    "id": 4,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 3.876821517944336,
+    "answer": "The Statement of Cash Activity shows a **total change in cash of (35,000)** for the year ended\u202fJune\u202f30,\u202f1997 (a decrease of\u202f35,000)(sample.pdf, page\u202f2)."
+  },
+  {
+    "id": 5,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 3.625351667404175,
+    "answer": "The cash at the end of the year was **$4,295,000** (sample.pdf, page\u202f2)."
+  },
+  {
+    "id": 6,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 6.7899298667907715,
+    "answer": "The balance sheet shows **Total Assets of $27,275,300** on June\u202f30,\u202f1997 (file\u202fsample.pdf, page\u202f3)."
+  },
+  {
+    "id": 7,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 7.824028968811035,
+    "answer": "The balance\u2011sheet shows **$17,102,200** in Investments for 1996 (file\u202fsample.pdf, page\u202f3)."
+  },
+  {
+    "id": 8,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 5.1164045333862305,
+    "answer": "The balance sheet shows **total liabilities of 24,664,500** for the year ended\u202fJune\u202f30\u202f1997 (file name: sample.pdf, page\u202f3)."
+  },
+  {
+    "id": 9,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 3.745309352874756,
+    "answer": "The balance sheet shows **Retained Earnings of\u202f2,610,800** for the year ended\u202fJune\u202f30\u202f1997 (file\u202fsample.pdf, page\u202f3)."
+  },
+  {
+    "id": 10,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 9.62613320350647,
+    "answer": "The combined total net income for the year ended\u202fJune\u202f30\u202f1997 was **710,500** (as shown in the \u201cNet Income\u201d line) (sample.pdf, page\u202f4)."
+  },
+  {
+    "id": 11,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 6.576215505599976,
+    "answer": "The document shows total revenues for 1996 of **$10,984,900** for the Workers\u2019 Compensation program and **$16,342,900** for the Liability Compensation program. Adding these gives **$27,327,800** in total revenues for 1996 (calculated as\u202f10,984,900\u202f+\u202f16,342,900\u202f=\u202f27,327,800). (sample.pdf, page\u202f4)"
+  },
+  {
+    "id": 12,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 4.364745616912842,
+    "answer": "The Workers\u2019 Compensation Program recorded **$10,030,000** in contributions for the year ended\u202fJune\u202f30\u202f1997 (file\u202fsample.pdf, page\u202f8)."
+  },
+  {
+    "id": 13,
+    "kind": "answerable",
+    "answer_ok": false,
+    "citation_ok": true,
+    "seconds": 13.337448120117188,
+    "answer": "The Liability Program reported **136,400** as net income for the year ended\u202fJune\u202f30\u202f1997 (file\u202fsample.pdf, page\u202f6)."
+  },
+  {
+    "id": 14,
+    "kind": "answerable",
+    "answer_ok": false,
+    "citation_ok": true,
+    "seconds": 9.945730447769165,
+    "answer": "The document reports **total expenses of\u202f5,798,000** for the year ended\u202fJune\u202f30\u202f1997 (as shown in the Statement of Income and Changes in Retained Earnings)(sample.pdf, page\u202f4)."
+  },
+  {
+    "id": 15,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 11.38280200958252,
+    "answer": "The total assets rose from **$21,681,700** in 1996 to **$27,275,300** in 1997, an increase of **$5,593,600** (calculated as\u202f$27,275,300\u202f\u2212\u202f$21,681,700)\u202f(sample.pdf, page\u202f3)."
+  },
+  {
+    "id": 16,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 4.711130619049072,
+    "answer": "Investments rose from **$17,102,200** in 1996 to **$22,793,300** in 1997, an increase of **$5,691,100** (22,793,300\u202f\u2212\u202f17,102,200)(sample.pdf, page 3)."
+  },
+  {
+    "id": 17,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 18.189900636672974,
+    "answer": "The contributions increased by **$521,000** (1997\u202f$15,386,000\u202fminus\u202f1996\u202f$14,865,000)(sample.pdf, page\u202f4)."
+  },
+  {
+    "id": 18,
+    "kind": "answerable",
+    "answer_ok": true,
+    "citation_ok": true,
+    "seconds": 3.7661209106445312,
+    "answer": "The net income for **claim year\u202f1996** in the Liability Program is **(139,400)** (a loss)(sample.pdf, page\u202f6)."
+  },
+  {
+    "id": 19,
+    "kind": "refusal",
+    "refused_ok": true,
+    "seconds": 3.456409215927124,
+    "answer": "Sorry, I couldn't find the answer in the uploaded document. Shrushti who built me has strictly grounded me."
+  },
+  {
+    "id": 20,
+    "kind": "refusal",
+    "refused_ok": true,
+    "seconds": 5.4808478355407715,
+    "answer": "Sorry, I couldn't find the answer in the uploaded document. Shrushti who built me has strictly grounded me."
+  },
+  {
+    "id": 21,
+    "kind": "refusal",
+    "refused_ok": true,
+    "seconds": 4.4780192375183105,
+    "answer": "Sorry, I couldn't find the answer in the uploaded document. Shrushti who built me has strictly grounded me."
+  }
+]

@@ -170,9 +170,26 @@ python -m pytest tests app/test_cache.py
 
 The tests cover the cache, rank fusion, document-type detection and metadata extraction, rate limits and session-id checks. They need no database, Supabase or Groq key. GitHub Actions runs them, and builds the frontend, on every push (`.github/workflows/ci.yml`).
 
-### 5. Evaluation
+## Evaluation
 
-`eval/run_eval.py` uploads a PDF to a running backend, asks the questions in `eval/questions.json`, and prints how many answers, page citations and refusals were correct. See `eval/README.md`.
+Run on 21 Nov 2026 against one 9-page financial report (`sample.pdf`), 21 questions
+(`python eval/run_eval.py --pdf sample.pdf`).
+
+| Check | Result |
+|---|---|
+| Answers correct | 16/18 |
+| Citations correct (file + page) | 18/18 |
+| Out-of-document questions refused | 3/3 |
+| Average response time | 6.6 s |
+
+### Failure log
+- **Q14** (total expenses 1997): returned the Liability column (5,798,000) instead of the
+  Totals column (16,150,000). Cause: table chunks lose their column headers.
+  Planned fix: keep the header row with each table chunk.
+- **Q13** (liability net income 1997): returned the 1997 claim-year column (136,400)
+  instead of the total (77,600). The question wording was ambiguous.
+
+Small test on one document; not a general accuracy claim.
 
 ### 6. Run the backend with Docker (optional)
 
