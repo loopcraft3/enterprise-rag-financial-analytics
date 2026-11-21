@@ -51,16 +51,29 @@ Each chat's documents live under its session id, and search only looks inside it
 
 ## Evaluation
 
-I wrote a set of 21 questions with known answers from a public filing (Apple's condensed quarterly statements): direct lookups, calculations (growth, margin, tax rate, current ratio, free cash flow), a reconciliation question, and out-of-document questions that must be refused.
+### Automated run (repeatable)
+
+Run on 21 Nov 2026 against one 9-page financial report (`sample.pdf`) with 21 questions: 18 answerable (lookups and calculations) and 3 that the document cannot answer.
+Command: `python eval/run_eval.py --pdf sample.pdf`
 
 | Check | Result |
 |---|---|
-| Test questions answered correctly (figure, period, page) | **21 / 21** |
-| Repeated-question response time with the answer cache | 5.5 s down to 1.6 s (one question, measured on my laptop) |
+| Answers correct | **16 / 18** |
+| Citations correct (file and page) | **18 / 18** |
+| Out-of-document questions refused | **3 / 3** |
+| Average response time | 6.6 s |
 
-This is a small test I wrote myself, so it shows the pipeline works on that filing. It is not a general accuracy claim.
+**Failure log**
+- **Q14** (total expenses, 1997): returned the Liability column (5,798,000) instead of the Totals column (16,150,000). Cause: table chunks lose their column headers. Planned fix: keep the header row with each table chunk.
+- **Q13** (liability net income, 1997): returned the 1997 claim-year column (136,400) instead of the total (77,600). The question wording was ambiguous.
 
-**Failure found during testing:** the model invented a fiscal-quarter label ("Q3") that the document did not contain, and guessed a currency symbol when the PDF text had a garbled one. I fixed both with explicit prompt constraints and re-tested.
+This is a small test on one document, so it is not a general accuracy claim.
+
+### Earlier manual check
+
+I also wrote 21 questions with known answers from a public filing (Apple's condensed quarterly statements): direct lookups, calculations (growth, margin, tax rate, current ratio, free cash flow), a reconciliation question, and out-of-document questions that must be refused. All 21 were answered correctly. Repeated-question response time with the answer cache went from 5.5 s to 1.6 s (one question, measured on my laptop).
+
+**Failure found during that testing:** the model invented a fiscal-quarter label ("Q3") that the document did not contain, and guessed a currency symbol when the PDF text had a garbled one. I fixed both with explicit prompt constraints and re-tested.
 
 ## Run it locally
 
@@ -170,26 +183,9 @@ python -m pytest tests app/test_cache.py
 
 The tests cover the cache, rank fusion, document-type detection and metadata extraction, rate limits and session-id checks. They need no database, Supabase or Groq key. GitHub Actions runs them, and builds the frontend, on every push (`.github/workflows/ci.yml`).
 
-## Evaluation
+### 5. Evaluation
 
-Run on 21 Nov 2026 against one 9-page financial report (`sample.pdf`), 21 questions
-(`python eval/run_eval.py --pdf sample.pdf`).
-
-| Check | Result |
-|---|---|
-| Answers correct | 16/18 |
-| Citations correct (file + page) | 18/18 |
-| Out-of-document questions refused | 3/3 |
-| Average response time | 6.6 s |
-
-### Failure log
-- **Q14** (total expenses 1997): returned the Liability column (5,798,000) instead of the
-  Totals column (16,150,000). Cause: table chunks lose their column headers.
-  Planned fix: keep the header row with each table chunk.
-- **Q13** (liability net income 1997): returned the 1997 claim-year column (136,400)
-  instead of the total (77,600). The question wording was ambiguous.
-
-Small test on one document; not a general accuracy claim.
+`eval/run_eval.py` uploads a PDF to a running backend, asks the questions in `eval/questions.json`, and prints how many answers, page citations and refusals were correct. See `eval/README.md`.
 
 ### 6. Run the backend with Docker (optional)
 
